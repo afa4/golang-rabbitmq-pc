@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"time"
 	"log"
+	"encoding/json"
 
+	"github.com/jgfn1/golang-rabbitmq/types"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -22,7 +26,7 @@ func main() {
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		"logs",   // name
+		"rand",   // name
 		"fanout", // type
 		true,     // durable
 		false,    // auto-deleted
@@ -33,7 +37,7 @@ func main() {
 	failOnError(err, "Failed to declare an exchange")
 
 	q, err := ch.QueueDeclare(
-		"",    // name
+		"rand",    // name
 		false, // durable
 		false, // delete when unused
 		true,  // exclusive
@@ -45,7 +49,7 @@ func main() {
 	err = ch.QueueBind(
 		q.Name, // queue name
 		"",     // routing key
-		"logs", // exchange
+		"rand", // exchange
 		false,
 		nil,
 	)
@@ -62,14 +66,13 @@ func main() {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	var forever chan struct{}
-
-	go func() {
-		for d := range msgs {
-			log.Printf(" [x] %s", d.Body)
+	for msg := range msgs {
+		message := types.Message{}
+		err := json.Unmarshal(msg.Body, &message)
+		if err != nil {
+			failOnError(err, "Failed to receive a message")
 		}
-	}()
 
-	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
-	<-forever
+		fmt.Printf("%d %d\n", len(message.Content), (time.Now().UnixNano() - message.CreatedAt))
+	}
 }

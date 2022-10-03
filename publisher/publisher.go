@@ -4,9 +4,11 @@ import (
 	"context"
 	"log"
 	"os"
-	"strings"
 	"time"
+	"strconv"
+	"encoding/json"
 
+	"github.com/jgfn1/golang-rabbitmq/types"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -26,7 +28,7 @@ func main() {
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		"logs",   // name
+		"rand",   // name
 		"fanout", // type
 		true,     // durable
 		false,    // auto-deleted
@@ -36,30 +38,43 @@ func main() {
 	)
 	failOnError(err, "Failed to declare an exchange")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	lenOfBytes, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		failOnError(err, "Failed to get lenOfBytes")
+	}
 
-	body := bodyFrom(os.Args)
-	err = ch.PublishWithContext(ctx,
-		"logs", // exchange
-		"",     // routing key
-		false,  // mandatory
-		false,  // immediate
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(body),
-		})
-	failOnError(err, "Failed to publish a message")
+	for i := 0; i < 10000; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
-	log.Printf(" [x] Sent %s", body)
+		
+		body := bodyFrom(os.Args, lenOfBytes)
+		err = ch.PublishWithContext(ctx,
+			"rand", // exchange
+			"",     // routing key
+			false,  // mandatory
+			false,  // immediate
+			amqp.Publishing{
+				ContentType: "application/json",
+				Body: body,
+			})
+		failOnError(err, "Failed to publish a message")
+	}
 }
 
-func bodyFrom(args []string) string {
-	var s string
-	if (len(args) < 2) || os.Args[1] == "" {
-		s = "hello world!"
-	} else {
-		s = strings.Join(args[1:], " ")
+func bodyFrom(args []string, lenOfBytes int) ([]byte) {
+	
+	message, err := buildMessage(lenOfBytes)
+	if err != nil {
+		failOnError(err, "Failed to create message")
 	}
-	return s
+
+	return message
+}
+
+func buildMessage(lenOfBytes int) ([]byte, error) {
+	return json.Marshal(types.Message{
+		Content: make([]byte, lenOfBytes),
+		CreatedAt: time.Now().UnixNano(),
+	})
 }
