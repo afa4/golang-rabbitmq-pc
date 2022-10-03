@@ -28,7 +28,7 @@ func main() {
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		"rand",   // name
+		"bytes",   // name
 		"fanout", // type
 		true,     // durable
 		false,    // auto-deleted
@@ -50,7 +50,7 @@ func main() {
 		
 		body := bodyFrom(os.Args, lenOfBytes)
 		err = ch.PublishWithContext(ctx,
-			"rand", // exchange
+			"bytes", // exchange
 			"",     // routing key
 			false,  // mandatory
 			false,  // immediate

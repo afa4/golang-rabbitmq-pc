@@ -28,7 +28,7 @@ func main() {
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		"rand",   // name
+		"bytes",   // name
 		"fanout", // type
 		true,     // durable
 		false,    // auto-deleted
@@ -39,7 +39,7 @@ func main() {
 	failOnError(err, "Failed to declare an exchange")
 
 	q, err := ch.QueueDeclare(
-		"rand",    // name
+		"bytes",    // name
 		false, // durable
 		false, // delete when unused
 		true,  // exclusive
@@ -51,7 +51,7 @@ func main() {
 	err = ch.QueueBind(
 		q.Name, // queue name
 		"",     // routing key
-		"rand", // exchange
+		"bytes", // exchange
 		false,
 		nil,
 	)
@@ -79,7 +79,6 @@ func main() {
 		}
 
 		csvwriter.Write([]string{fmt.Sprintf("%d", len(message.Content)), fmt.Sprintf("%d", (time.Now().UnixNano() - message.CreatedAt))})
-		fmt.Printf("%d %d\n", len(message.Content), (time.Now().UnixNano() - message.CreatedAt))
 	}
 	csvFile.Close()
 }
