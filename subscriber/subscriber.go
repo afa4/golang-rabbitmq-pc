@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/jgfn1/golang-rabbitmq/types"
@@ -26,6 +27,13 @@ func main() {
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
+
+	prefetchCount, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		failOnError(err, "Failed to get lenOfBytes")
+	}
+
+	ch.Qos(prefetchCount)
 
 	err = ch.ExchangeDeclare(
 		"bytes",  // name
@@ -73,7 +81,7 @@ func main() {
 	csvwriter := csv.NewWriter(csvFile)
 	csvwriter.Write([]string{"Bytes", "ExecTime"})
 	for msg := range msgs {
-		msg.Acknowledger.Ack(msg.DeliveryTag, false)
+		msg.Ack(false)
 		arrivalTime := time.Now().UnixNano()
 		message := types.Message{}
 		err := json.Unmarshal(msg.Body, &message)
