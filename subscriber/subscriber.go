@@ -30,10 +30,10 @@ func main() {
 
 	prefetchCount, err := strconv.Atoi(os.Args[1])
 	if err != nil {
-		failOnError(err, "Failed to get lenOfBytes")
+		failOnError(err, "Failed to get prefetchCount")
 	}
 
-	ch.Qos(prefetchCount)
+	ch.Qos(prefetchCount, 0, false)
 
 	err = ch.ExchangeDeclare(
 		"bytes",  // name
