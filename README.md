@@ -1,1 +1,1 @@
-# golang-rabbitmq
+# golang-rabbitmq prefetch count

@@ -1,12 +1,12 @@
 package main
 
 import (
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
-	"time"
 	"log"
 	"os"
-	"encoding/json"
-	"encoding/csv"
+	"time"
 
 	"github.com/jgfn1/golang-rabbitmq/types"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -28,7 +28,7 @@ func main() {
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		"bytes",   // name
+		"bytes",  // name
 		"fanout", // type
 		true,     // durable
 		false,    // auto-deleted
@@ -39,18 +39,18 @@ func main() {
 	failOnError(err, "Failed to declare an exchange")
 
 	q, err := ch.QueueDeclare(
-		"bytes",    // name
-		false, // durable
-		false, // delete when unused
-		true,  // exclusive
-		false, // no-wait
-		nil,   // arguments
+		"bytes", // name
+		false,   // durable
+		false,   // delete when unused
+		true,    // exclusive
+		false,   // no-wait
+		nil,     // arguments
 	)
 	failOnError(err, "Failed to declare a queue")
 
 	err = ch.QueueBind(
-		q.Name, // queue name
-		"",     // routing key
+		q.Name,  // queue name
+		"",      // routing key
 		"bytes", // exchange
 		false,
 		nil,
@@ -60,7 +60,7 @@ func main() {
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -69,16 +69,18 @@ func main() {
 	failOnError(err, "Failed to register a consumer")
 
 	csvFile, err := os.Create("execs.csv")
+	defer csvFile.Close()
 	csvwriter := csv.NewWriter(csvFile)
 	csvwriter.Write([]string{"Bytes", "ExecTime"})
 	for msg := range msgs {
+		msg.Acknowledger.Ack(msg.DeliveryTag, false)
+		arrivalTime := time.Now().UnixNano()
 		message := types.Message{}
 		err := json.Unmarshal(msg.Body, &message)
 		if err != nil {
 			failOnError(err, "Failed to receive a message")
 		}
 
-		csvwriter.Write([]string{fmt.Sprintf("%d", len(message.Content)), fmt.Sprintf("%d", (time.Now().UnixNano() - message.CreatedAt))})
+		csvwriter.Write([]string{fmt.Sprintf("%d", len(message.Content)), fmt.Sprintf("%d", message.CreatedAt-arrivalTime)})
 	}
-	csvFile.Close()
 }
