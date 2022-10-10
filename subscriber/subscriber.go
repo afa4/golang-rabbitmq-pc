@@ -2,14 +2,12 @@ package main
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/jgfn1/golang-rabbitmq/types"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -75,15 +73,14 @@ func main() {
 	failOnError(err, "Failed to register a consumer")
 
 	csvFile, err := os.Create("execs.csv")
-	defer csvFile.Close()
 	csvwriter := csv.NewWriter(csvFile)
 	csvwriter.Write([]string{"Bytes", "ExecTime"})
 	for msg := range msgs {
 		msg.Ack(false)
 		arrivalTime := time.Now().UnixNano()
-		message := types.Message{}
-		err := json.Unmarshal(msg.Body, &message)
 		failOnError(err, "Failed to receive a message")
-		csvwriter.Write([]string{fmt.Sprintf("%d", len(message.Content)), fmt.Sprintf("%d", message.CreatedAt-arrivalTime)})
+		err = csvwriter.Write([]string{fmt.Sprintf("%d", len(msg.Body)), fmt.Sprintf("%d", msg.Timestamp.UnixNano()-arrivalTime)})
+		failOnError(err, "Could not write to csv")
 	}
+	csvFile.Close()
 }
