@@ -29,9 +29,7 @@ func main() {
 	defer ch.Close()
 
 	prefetchCount, err := strconv.Atoi(os.Args[1])
-	if err != nil {
-		failOnError(err, "Failed to get prefetchCount")
-	}
+	failOnError(err, "Failed to get prefetchCount")
 
 	ch.Qos(prefetchCount, 0, false)
 
@@ -85,10 +83,7 @@ func main() {
 		arrivalTime := time.Now().UnixNano()
 		message := types.Message{}
 		err := json.Unmarshal(msg.Body, &message)
-		if err != nil {
-			failOnError(err, "Failed to receive a message")
-		}
-
+		failOnError(err, "Failed to receive a message")
 		csvwriter.Write([]string{fmt.Sprintf("%d", len(message.Content)), fmt.Sprintf("%d", message.CreatedAt-arrivalTime)})
 	}
 }
