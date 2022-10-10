@@ -75,11 +75,17 @@ func main() {
 	csvFile, err := os.Create("execs.csv")
 	csvwriter := csv.NewWriter(csvFile)
 	csvwriter.Write([]string{"Bytes", "ExecTime"})
+	msgCounter := 0
 	for msg := range msgs {
-		msg.Ack(false)
+		err = msg.Ack(false)
+		msgCounter++
+		failOnError(err, "Failed to ack")
 		arrivalTime := time.Now().UnixNano()
 		failOnError(err, "Failed to receive a message")
-		err = csvwriter.Write([]string{fmt.Sprintf("%d", len(msg.Body)), fmt.Sprintf("%d", msg.Timestamp.UnixNano()-arrivalTime)})
+		err = csvwriter.Write([]string{fmt.Sprintf("%d", len(msg.Body)), fmt.Sprintf("%d", arrivalTime-msg.Timestamp.UnixNano())})
+		if msgCounter%100 == 0 {
+			csvwriter.Flush()
+		}
 		failOnError(err, "Could not write to csv")
 	}
 	csvFile.Close()

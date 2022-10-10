@@ -36,7 +36,7 @@ func main() {
 	)
 	failOnError(err, "Failed to declare an exchange")
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10000; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
